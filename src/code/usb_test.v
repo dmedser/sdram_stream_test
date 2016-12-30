@@ -287,15 +287,22 @@ assign FH4_C2_DE	= 0;
 parameter OFF = 0,
 			 ON  = 1;
 
-wire   CLK48M;
-//assign SDRAM_CLK = CLK48M;
+wire CLK48M;
+wire CLK48M_S;
+wire [15:0] SDRAM_DATA;
+wire FIFO_TX_RDY;
+wire SDRAM_RX_RDY;
+wire SDRAM_Q_ASSERTED;
+
+assign SDRAM_CLK  = CLK48M_S; 
 
 pll _pll
 (
 	.inclk0(CLK), 
 	.c0(),
 	.c1(CLK48M),
-	.c2()
+	.c2(),
+	.c3(CLK48M_S)
 );
 
 SDRAM_controller sdram_c 
@@ -304,8 +311,7 @@ SDRAM_controller sdram_c
 	.n_rst(RESET),
 	
 	/***** TO SDRAM *****/
-	//.CKE(SDRAM_CLKE),
-	.CKE(),
+	.CKE(SDRAM_CLKE),
 	.nCS(SDRAM_nCS),
 	.nWE(SDRAM_nWE),
 	.nCAS(SDRAM_nCAS),
@@ -321,61 +327,10 @@ SDRAM_controller sdram_c
 	.data(SDRAM_DATA),
 	.fifo_tx_rdy(FIFO_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
+	.sdram_q_asserted(SDRAM_Q_ASSERTED),
 	.rfo(SDRAM_RFO)
 );
 
-wire [15:0] SDRAM_DATA;
-
-wire FIFO_TX_RDY;
-wire SDRAM_RX_RDY;
-
-//fifo _fifo_buf 
-//(
-//	.clock(FCLK_OUT),
-//	.data(TO_FIFO_REG),
-//	.rdreq(_FIFO_BUF_RD_REQ),
-//	.wrreq(_FIFO_BUF_WR_REQ),
-//	.empty(_FIFO_BUF_EMPTY),
-//	.full(_FIFO_BUF_FULL),
-//	.q(_FIFO_BUF_Q),
-//	.usedw()
-//);
-
-
-// reg [7:0] TO_FIFO_REG;
-//wire [7:0] _FIFO_BUF_Q;
-//wire _FIFO_BUF_EMPTY;
-//wire _FIFO_BUF_FULL;
-
-// СТРОБ ЗАПИСИ В FTDI 
-//wire _FIFO_BUF_RD_REQ = ~WR_DISABLE; // FIFO не пустой, FTXE == 0, FWR == 0, FOE == 1
-// СТРОБ ЗАПИСИ В FIFO
-//wire _FIFO_BUF_WR_REQ = ~_FIFO_BUF_FULL & (COUNT_STATUS == COUNT_START); // FIFO не полон, COUNT_STATUS == COUNT_START
- 
-//assign FU_D[7:0] = FOE ? _FIFO_BUF_Q : 8'hzz; // FOE = 0 -> слушать, шина в 3-ем состоянии, ничего в нее не писать   
-// -------------------------------------------------------------------------------------------------------------------
-//ram_1_port _ram
-//(
-//	.address(_RAM_ADDR),
-//	.clock(FCLK_OUT),
-//	.data(TO_RAM_REG),
-//	.rden(_RAM_RD_EN),
-//	.wren(_RAM_WR_EN),
-//	.q(_RAM_Q)
-//);
-//
-//reg [7:0] TO_RAM_REG;
-//
-//wire _RAM_RD_EN = (ram_state == RAM_STATE_READING);//~WR_DISABLE;
-//wire _RAM_WR_EN = (ram_state == RAM_STATE_WRITING);
-//
-//wire [7:0] _RAM_Q;
-//wire [13:0] _RAM_ADDR;
-//assign _RAM_ADDR = (ram_state == RAM_STATE_READING)? ram_rd_addr : ram_wr_addr;
-//wire RAM_Q_ASSERTED = (ram_state == RAM_STATE_READING) && (byte_counter == 2);
-//
-//reg [13:0] ram_rd_addr;
-//reg [13:0] ram_wr_addr;
 
 assign FU_D[7:0] = 8'hzz;
 
@@ -430,6 +385,19 @@ fifo_rd_controller fifo_rd_c (
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.rdreq(FIFO_TO_SDRAM_RD_REQ)
 );
+
+
+//fifo fifo_from_sdram 
+//(
+//	.clock(CLK48M),
+//	.data(SDRAM_DQ),
+//	.rdreq(),
+//	.wrreq(SDRAM_Q_ASSERTED),
+//	.empty(),
+//	.full(),
+//	.q(),
+//	.usedw()
+//);
 
 
 

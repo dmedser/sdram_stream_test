@@ -33,6 +33,7 @@ module SDRAM_controller (
 reg[3:0] cmd;
 reg SDRAM_IS_EMPTY;
 
+assign DQ = (sdram_state == SDRAM_STATE_WRITE)? data : 16'hzzzz;
 
 command_controller cmd_c (
 	.clk(clk),
@@ -115,12 +116,12 @@ end
 /************ MAIN MACHINE ************/	
 
 reg [2:0] sdram_state;
-parameter SDRAM_STATE_INIT 	= 0,
-			 SDRAM_STATE_CONTROL = 1,
-			 SDRAM_STATE_WRITE	= 2,
-			 SDRAM_STATE_READ	   = 3,
-			 SDRAM_STATE_REFRESH = 4,
-			 SDRAM_STATE_IDLE		= 5;
+parameter SDRAM_STATE_INIT 			= 0,
+			 SDRAM_STATE_FORCE_REFRESH = 1,
+			 SDRAM_STATE_CONTROL 		= 2,
+			 SDRAM_STATE_WRITE			= 3,
+			 SDRAM_STATE_READ	   		= 4,
+			 SDRAM_STATE_REFRESH 		= 5;
 			 
 reg RESET_REFRESH_COUNTER;			 
 
@@ -143,6 +144,10 @@ begin
 							begin
 								sdram_init();
 							end
+						SDRAM_STATE_FORCE_REFRESH:
+							begin
+								sdram_force_refresh();
+							end
 						SDRAM_STATE_CONTROL:
 							begin
 								sdram_state_control();
@@ -161,7 +166,7 @@ begin
 							end
 						default: 
 							begin
-								sdram_idle();
+								sdram_state_control();
 							end
 					endcase 
 				end
@@ -242,11 +247,18 @@ endtask
 /************** SDRAM STATE CONTROL **************/
 
 reg [13:0] refresh_counter;
-parameter REFRESHES_COUNT = 8192;
+parameter REFRESHES_PER_tRFC = 8192;
+parameter FORCE_REFRESH_TIME = (REFRESH_PERIOD - (REFRESHES_PER_tRFC*4));
 
 task sdram_state_control;
 	begin
-		if(fifo_tx_rdy == ON)
+		if((refresh_counter < REFRESHES_PER_tRFC) && (refresh_period_time >= FORCE_REFRESH_TIME))
+			begin
+				cmd = `CMD_AUTO_REFRESH;
+				refresh_counter = refresh_counter + 1;
+				sdram_state = SDRAM_STATE_FORCE_REFRESH;
+			end
+		else if(fifo_tx_rdy == ON)
 			begin
 				cmd = `CMD_ACTIVE;
 				sdram_rx_rdy = ON;
@@ -257,15 +269,11 @@ task sdram_state_control;
 				cmd = `CMD_ACTIVE;
 				sdram_state = SDRAM_STATE_READ;
 			end
-		else if(refresh_counter < REFRESHES_COUNT)
+		else if(refresh_counter < REFRESHES_PER_tRFC)
 			begin
 				cmd = `CMD_AUTO_REFRESH;
 				refresh_counter = refresh_counter + 1;
 				sdram_state = SDRAM_STATE_REFRESH;
-			end
-		else 
-			begin
-				sdram_state = SDRAM_STATE_CONTROL;
 			end
 	end
 endtask 
@@ -416,13 +424,31 @@ task sdram_refresh;
 endtask
 
 
-/************** SDRAM IDLE STATE **************/
+/************** SDRAM FORCE REFRESH **************/
 
-task sdram_idle;
+task sdram_force_refresh;
 	begin
-		cmd = `CMD_NOP;
+		if(refresh_time < REFRESH_TIME)
+			begin
+				cmd = `CMD_NOP;
+				refresh_time = refresh_time + 1;
+			end
+		else 
+			begin
+				refresh_time = 0;
+				if(refresh_counter == REFRESHES_PER_tRFC)
+					begin
+						sdram_state = SDRAM_STATE_CONTROL;
+					end
+				else 
+					begin
+						cmd = `CMD_AUTO_REFRESH;
+						refresh_counter = refresh_counter + 1;
+					end
+			end
 	end
 endtask
+
 
 endmodule
 
