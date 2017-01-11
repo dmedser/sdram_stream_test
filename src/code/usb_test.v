@@ -332,6 +332,10 @@ SDRAM_controller sdram_c
 );
 
 
+assign TP[6] = SDRAM_CLK;
+assign TP[2] = SDRAM_nWE;
+assign TP[4] = SDRAM_nRAS;
+assign TP[5] = 0;
 assign FU_D[7:0] = 8'hzz;
 
 reg RESET;
@@ -357,6 +361,7 @@ adapter_32_to_16 adapter (
 	.stream_16(FIFO_TO_SDRAM_DATA),
 	.num_16_rdy(FIFO_TO_SDRAM_WR_REQ)
 );
+
 
 fifo fifo_to_sdram 
 (

@@ -20,9 +20,10 @@ begin
 		`CMD_ACTIVE:				 ACTIVE();
 		`CMD_READ:					 READ();
 		`CMD_WRITE:					 WRITE();
+		`CMD_PRECHARGE:			 PRECHARGE();
 		`CMD_BURST_TERMINATE:	 BURST_TERMINATE;
 		`CMD_AUTO_REFRESH:		 AUTO_REFRESH;
-		`CMD_LOAD_MODE_REGISTER: LOAD_MODE_REGISTER; 
+		`CMD_LOAD_MODE_REGISTER: LOAD_MODE_REGISTER;
 		default:						 NOP();
 	endcase
 end			 
@@ -33,8 +34,8 @@ task COMMAND_INHIBIT;
 		c_nRAS = 0; 
 		c_nCAS = 0;  
 		c_nWE  = 0; 
-		c_DQML = 1; 
-		c_DQMH = 1;
+		c_DQML = 0; 
+		c_DQMH = 0;
 	end
 endtask
 
@@ -44,8 +45,8 @@ task NOP;
 		c_nRAS = 1;
 		c_nCAS = 1;
 		c_nWE  = 1;
-		c_DQML = 1; 
-		c_DQMH = 1; 
+		c_DQML = 0; 
+		c_DQMH = 0; 
 	end
 endtask
 
@@ -55,8 +56,8 @@ task ACTIVE;
 		c_nRAS = 0;
 		c_nCAS = 1;
 		c_nWE  = 1;
-		c_DQML = 1;  
-		c_DQMH = 1; 
+		c_DQML = 0;  
+		c_DQMH = 0; 
 	end
 endtask
 

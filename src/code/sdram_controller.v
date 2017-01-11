@@ -55,7 +55,9 @@ parameter FALSE = 0,
 /*************** SDRAM INIT TIMER ***************/
 
 // clk = 48 MHz
-parameter t100us = 4800 - 1,
+parameter CMD_ASSERT_TIME_OFFSET = 1;
+
+parameter t100us = 4800 - 1 - CMD_ASSERT_TIME_OFFSET,
 			 tCK	  = 1,
           tRP    = 2,
           tRFC   = 4,
@@ -111,7 +113,6 @@ begin
 				refresh_period_time = 0;
 		end
 end
-
 
 /************ MAIN MACHINE ************/	
 
@@ -199,6 +200,8 @@ endtask
 
 /************** SDRAM IINIT **************/
 
+parameter ADDR_ASSERT_TIME_OFFSET = 1; 
+
 task sdram_init;
 	begin
 		case(time_ini)
@@ -208,11 +211,16 @@ task sdram_init;
 				end
 			(t100us + tCK):
 				begin
-					A[10] = ON; // All banks precharged
 					cmd = `CMD_PRECHARGE;
+				end
+			(t100us + tCK + ADDR_ASSERT_TIME_OFFSET):
+				begin
+					A[10] = ON; 		// All banks precharged
+					cmd = `CMD_NOP;	// Т.к. не выполнится default
 				end
 			(t100us + tCK + tRP):
 				begin
+					A = 0;
 					cmd = `CMD_AUTO_REFRESH;
 				end
 			(t100us + tCK + tRP + tRFC):
@@ -222,22 +230,28 @@ task sdram_init;
 			(t100us + tCK + tRP + 2*tRFC):
 				begin
 					cmd = `CMD_LOAD_MODE_REGISTER;
+				end
+			(t100us + tCK + tRP + 2*tRFC + ADDR_ASSERT_TIME_OFFSET):
+				begin
 					BA[0] = OFF;
 					BA[1] = OFF;
 					`write_burst_mode = `WRITE_BURST_MODE_PROGRAMMED_BURST_LENGTH;
 					`operating_mode 	= `OPERATING_MODE_STANDARD; 
-					`cas_latency 		= `CAS_LATENCY_2;
+					`cas_latency 		= `CAS_LATENCY_3;
 					`burst_type 		= `BURST_TYPE_SEQUENTIAL;
 					`burst_length 		= `BURST_LENGTH_FULL_PAGE;
-				end
+					cmd = `CMD_NOP;
+				end	
 			SDRAM_init_time:
 				begin
 					rfo = ON;
 					sdram_state = SDRAM_STATE_CONTROL;
+					A = 0;
 				end
 			default:
 				begin	
 					cmd = `CMD_NOP;
+					A = 0;
 				end
 		endcase
 	end
@@ -269,7 +283,7 @@ task sdram_state_control;
 				cmd = `CMD_ACTIVE;
 				sdram_state = SDRAM_STATE_READ;
 			end
-		else if(refresh_counter < REFRESHES_PER_tRFC)
+	else if(refresh_counter < REFRESHES_PER_tRFC)
 			begin
 				cmd = `CMD_AUTO_REFRESH;
 				refresh_counter = refresh_counter + 1;
@@ -448,6 +462,7 @@ task sdram_force_refresh;
 			end
 	end
 endtask
+
 
 
 endmodule
