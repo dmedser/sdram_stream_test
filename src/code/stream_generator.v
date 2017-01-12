@@ -25,7 +25,7 @@ begin
 	if(n_rst == OFF)
 		begin
 			ticks = 0;
-			counter = 0;//32'hfafbfcfd;
+			counter = 32'hfafbfcfd;
 		end
 	else 
 		begin

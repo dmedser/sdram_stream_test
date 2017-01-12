@@ -20,11 +20,13 @@ module SDRAM_controller (
 	input [14:0] addr,
 	inout [15:0] data,
 
-	output reg rfo, 	// Ready For Operation, выставляется по готовности после ресета
+	output reg sdram_rfo, 	// Ready For Operation, выставляется по готовности после ресета
 	
 	input  fifo_tx_rdy,			// FIFO готов передавать данные
+	
 	output reg sdram_rx_rdy,  	// SDRAM готова принимать данные 
-	output reg sdram_q_asserted
+	output reg sdram_q_asserted,
+	output [15:0] sdram_q
 );
 
 `include "C:/Users/dell/Documents/Quartus/usb_test/src/code/commands.vh"
@@ -34,6 +36,8 @@ reg[3:0] cmd;
 reg SDRAM_IS_EMPTY;
 
 assign DQ = (sdram_state == SDRAM_STATE_WRITE)? data : 16'hzzzz;
+
+assign sdram_q = sdram_q_asserted ? DQ : 16'h0000;
 
 command_controller cmd_c (
 	.clk(clk),
@@ -96,7 +100,7 @@ begin
 		end
 	else 
 		begin
-			if(rfo == ON)
+			if(sdram_rfo == ON)
 				begin
 					if(refresh_period_time < REFRESH_PERIOD)
 						begin
@@ -180,7 +184,7 @@ end
 task reset_sdram_controller;
 	begin
 		CKE = OFF;
-		rfo = OFF;
+		sdram_rfo = OFF;
 		A   = 0;
 		BA  = 0;
 		SDRAM_IS_EMPTY = TRUE;
@@ -237,21 +241,20 @@ task sdram_init;
 					BA[1] = OFF;
 					`write_burst_mode = `WRITE_BURST_MODE_PROGRAMMED_BURST_LENGTH;
 					`operating_mode 	= `OPERATING_MODE_STANDARD; 
-					`cas_latency 		= `CAS_LATENCY_3;
+					`cas_latency 		= `CAS_LATENCY_2;
 					`burst_type 		= `BURST_TYPE_SEQUENTIAL;
 					`burst_length 		= `BURST_LENGTH_FULL_PAGE;
 					cmd = `CMD_NOP;
 				end	
 			SDRAM_init_time:
 				begin
-					rfo = ON;
+					sdram_rfo = ON;
 					sdram_state = SDRAM_STATE_CONTROL;
 					A = 0;
 				end
 			default:
 				begin	
 					cmd = `CMD_NOP;
-					A = 0;
 				end
 		endcase
 	end
@@ -275,7 +278,6 @@ task sdram_state_control;
 		else if(fifo_tx_rdy == ON)
 			begin
 				cmd = `CMD_ACTIVE;
-				sdram_rx_rdy = ON;
 				sdram_state = SDRAM_STATE_WRITE;
 			end
 		else if(SDRAM_IS_EMPTY == FALSE)
@@ -296,9 +298,13 @@ endtask
 
 reg [9:0] wr_time;
 parameter PAGE_WRITE_PERIOD = 512 + 2;
+
 parameter tWRITE      	  = 2 - 1,
 			 tWR_BURST_TERM  = PAGE_WRITE_PERIOD - 1,
 			 tWRITE_COMPLETE = PAGE_WRITE_PERIOD + 1 - 1;
+			 
+parameter tSDRAM_RX_RDY 			= 0,
+			 tFIRST_BYTE_IS_WRITTEN = 3;
 
 always@(posedge clk or negedge n_rst)
 begin
@@ -314,6 +320,10 @@ begin
 						begin
 							wr_time = wr_time + 1;
 						end
+					else
+						begin
+							wr_time = 0;
+						end
 				end
 			else 
 				begin
@@ -328,9 +338,18 @@ end
 task sdram_write;
 	begin
 		case(wr_time)
+			tSDRAM_RX_RDY:
+				begin
+					sdram_rx_rdy = ON;
+					cmd = `CMD_NOP;
+				end
 			tWRITE:
 				begin
 					cmd = `CMD_WRITE;
+					sdram_rx_rdy = OFF;
+				end
+			tFIRST_BYTE_IS_WRITTEN:
+				begin
 					SDRAM_IS_EMPTY = FALSE;
 				end
 			tWR_BURST_TERM:
@@ -345,7 +364,6 @@ task sdram_write;
 			default:
 				begin
 					cmd = `CMD_NOP;
-					sdram_rx_rdy = OFF;
 				end
 		endcase
 	end
@@ -357,7 +375,7 @@ endtask
 reg [9:0] rd_time;
 parameter PAGE_READ_PERIOD = 512 + 4;
 parameter tREAD       = 2 - 1,
-			 tDATA_OUT   = 4 - 1,
+			 tDATA_OUT   = 4 + 1 - 1,
 			 tRD_BURST_TERM = PAGE_READ_PERIOD - 1,
 			 tREAD_COMPLETE = PAGE_READ_PERIOD + 1 - 1;
 
@@ -374,6 +392,10 @@ begin
 					if(wr_time < tREAD_COMPLETE)
 						begin
 							rd_time = rd_time + 1;
+						end
+					else 
+						begin
+							rd_time = 0;
 						end
 				end
 			else 
@@ -400,11 +422,11 @@ task sdram_read;
 			tRD_BURST_TERM:
 				begin
 					cmd = `CMD_BURST_TERMINATE;
-					sdram_q_asserted = OFF;
 				end
 			tREAD_COMPLETE:
 				begin
 					cmd = `CMD_NOP;
+					sdram_q_asserted = OFF;
 					SDRAM_IS_EMPTY = TRUE;
 					sdram_state = SDRAM_STATE_CONTROL;
 				end

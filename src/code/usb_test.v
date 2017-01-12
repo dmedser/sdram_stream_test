@@ -293,6 +293,7 @@ wire [15:0] SDRAM_DATA;
 wire FIFO_TX_RDY;
 wire SDRAM_RX_RDY;
 wire SDRAM_Q_ASSERTED;
+wire [15:0] SDRAM_Q;
 
 assign SDRAM_CLK  = CLK48M_S; 
 
@@ -328,7 +329,8 @@ SDRAM_controller sdram_c
 	.fifo_tx_rdy(FIFO_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.sdram_q_asserted(SDRAM_Q_ASSERTED),
-	.rfo(SDRAM_RFO)
+	.sdram_q(SDRAM_Q),
+	.sdram_rfo(SDRAM_RFO)
 );
 
 
@@ -354,7 +356,7 @@ wire [31:0] STREAM_FROM_GEN_TO_ADAPTER;
 wire 			NUM_32_RDY;
 wire			ENABLE_GENERATOR = ((count_status == COUNT_START) && (SDRAM_RFO == ON)); 
 
-adapter_32_to_16 adapter (
+adapter_32_to_16 gf_adapter (
 	.clk(CLK48M),
 	.stream_32(STREAM_FROM_GEN_TO_ADAPTER),
 	.num_32_rdy(NUM_32_RDY),
@@ -391,19 +393,28 @@ fifo_rd_controller fifo_rd_c (
 	.rdreq(FIFO_TO_SDRAM_RD_REQ)
 );
 
+fifo fifo_from_sdram
+(
+	.clock(CLK48M),
+	.data(SDRAM_Q),
+	.rdreq(FIFO_FROM_SDRAM_RDREQ),
+	.wrreq(SDRAM_Q_ASSERTED),
+	.empty(),
+	.full(),
+	.q(FIFO_FROM_SDRAM_Q),
+	.usedw(FIFO_FROM_SDRAM_USEDW)
+);
 
-//fifo fifo_from_sdram 
-//(
-//	.clock(CLK48M),
-//	.data(SDRAM_DQ),
-//	.rdreq(),
-//	.wrreq(SDRAM_Q_ASSERTED),
-//	.empty(),
-//	.full(),
-//	.q(),
-//	.usedw()
-//);
+wire [15:0] FIFO_FROM_SDRAM_Q;
+wire FIFO_FROM_SDRAM_RDREQ;
+wire [9:0] FIFO_FROM_SDRAM_USEDW;
 
+fifo_ftdi_adapter ff_adapter (
+	.clk(CLK48M),
+	.usedw(FIFO_FROM_SDRAM_USEDW),
+	.rdreq(FIFO_FROM_SDRAM_RDREQ),
+	.data_from_fifo(FIFO_FROM_SDRAM_Q)
+);
 
 
 parameter TICKS_IN_4_SEC = 192000000 - 1;
