@@ -31,7 +31,7 @@ module usb_test (
 		output  reg FODD,
 		output  reg FOE,
 		output  reg FSIWU,
-		output  reg FWR,
+		output /*reg*/	FWR,
 		output  reg FRD,
 		input   wire FTXE,
 		input   wire FCLK_OUT,
@@ -290,7 +290,7 @@ parameter OFF = 0,
 wire CLK48M;
 wire CLK48M_S;
 wire [15:0] SDRAM_DATA;
-wire FIFO_TX_RDY;
+wire FIFO_TO_SDRAM_TX_RDY;
 wire SDRAM_RX_RDY;
 wire SDRAM_Q_ASSERTED;
 wire [15:0] SDRAM_Q;
@@ -326,7 +326,7 @@ SDRAM_controller sdram_c
 	/******* USER ********/
 	.addr(SDRAM_ADDRESS),
 	.data(SDRAM_DATA),
-	.fifo_tx_rdy(FIFO_TX_RDY),
+	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.sdram_q_asserted(SDRAM_Q_ASSERTED),
 	.sdram_q(SDRAM_Q),
@@ -338,7 +338,7 @@ assign TP[6] = SDRAM_CLK;
 assign TP[2] = SDRAM_nWE;
 assign TP[4] = SDRAM_nRAS;
 assign TP[5] = 0;
-assign FU_D[7:0] = 8'hzz;
+assign FU_D[7:0] = (FOE == 1) ? FIFO_TO_FTDI_Q : 8'hzz;
 
 reg RESET;
 reg [7:0] INPUT_REG;
@@ -371,8 +371,6 @@ fifo fifo_to_sdram
 	.data(FIFO_TO_SDRAM_DATA),
 	.rdreq(FIFO_TO_SDRAM_RD_REQ),
 	.wrreq(FIFO_TO_SDRAM_WR_REQ),
-	.empty(FIFO_TO_SDRAM_EMPTY),
-	.full(FIFO_TO_SDRAM_FULL),
 	.q(SDRAM_DATA),
 	.usedw(USEDW)
 );
@@ -381,14 +379,11 @@ wire [9:0] USEDW;
 
 wire [15:0] FIFO_TO_SDRAM_DATA;
 wire 			FIFO_TO_SDRAM_WR_REQ;
-wire 			FIFO_TO_SDRAM_EMPTY;
-wire 			FIFO_TO_SDRAM_FULL;
 
-
-fifo_rd_controller fifo_rd_c (
+fifo_to_sdram_rd_controller fifo_to_sdram_rd_c (
 	.clk(CLK48M),
 	.usedw(USEDW),
-	.fifo_tx_rdy(FIFO_TX_RDY),
+	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.rdreq(FIFO_TO_SDRAM_RD_REQ)
 );
@@ -399,26 +394,61 @@ fifo fifo_from_sdram
 	.data(SDRAM_Q),
 	.rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.wrreq(SDRAM_Q_ASSERTED),
-	.empty(),
-	.full(),
-	.q(FIFO_FROM_SDRAM_Q),
+	.q(FIFO_FROM_SDRAM_Q_16),
 	.usedw(FIFO_FROM_SDRAM_USEDW)
 );
 
-wire [15:0] FIFO_FROM_SDRAM_Q;
-wire FIFO_FROM_SDRAM_RDREQ;
-wire [9:0] FIFO_FROM_SDRAM_USEDW;
+wire [15:0] FIFO_FROM_SDRAM_USEDW;
+wire [15:0] FIFO_FROM_SDRAM_Q_16;
+wire 		   FIFO_FROM_SDRAM_RDREQ;
 
-fifo_ftdi_adapter ff_adapter (
+fifo_from_sdram_rd_controller 
+(
 	.clk(CLK48M),
 	.usedw(FIFO_FROM_SDRAM_USEDW),
 	.rdreq(FIFO_FROM_SDRAM_RDREQ),
-	.data_from_fifo(FIFO_FROM_SDRAM_Q)
+	.byte_switcher(BYTE_SWITCHER),
+	.fifo_q_asserted(FIFO_FROM_SDRAM_Q_ASSERTED)
+);
+wire BYTE_SWITCHER;
+
+s16s8_adapter s16s8_a(
+	.byte_switcher(BYTE_SWITCHER),
+	.s16(FIFO_FROM_SDRAM_Q_16),
+	.s8(FIFO_FROM_SDRAM_Q_8)
 );
 
+wire[7:0] FIFO_FROM_SDRAM_Q_8;
+
+fifo_rw_diff_clk fifo_to_ftdi (
+	.wrclk(CLK48M),
+	.data(FIFO_FROM_SDRAM_Q_8),
+	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
+	.rdclk(FCLK_OUT),
+	.rdreq(FIFO_TO_FTDI_RDREQ),
+	.rdusedw(FIFO_TO_FTDI_USEDW),
+	.q(FIFO_TO_FTDI_Q)
+);
+
+wire 		  FIFO_TO_FTDI_RDREQ;
+wire [7:0] FIFO_TO_FTDI_Q;
+wire [9:0] FIFO_TO_FTDI_USEDW;
+
+fifo_ftdi_adapter ff_adapter (
+	.usedw(FIFO_TO_FTDI_USEDW),
+	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
+	.rdreq(FIFO_TO_FTDI_RDREQ),
+	.fifo_tx_rdy(FIFO_TO_FTDI_TX_RDY),
+	.ftdi_rx_rdy(FTDI_RX_RDY),
+	.FWR(FWR),
+	.FTXE(FTXE)
+);
+
+wire FIFO_TO_FTDI_TX_RDY;
+wire FTDI_RX_RDY = ((system_state == SYS_STATE_COUNT_STOP_WAIT) || (system_state == SYS_STATE_WRITE_TO_FTDI)) && (FIFO_TO_FTDI_TX_RDY == ON) && (FTXE == 0);	
 
 parameter TICKS_IN_4_SEC = 192000000 - 1;
-reg[31:0] rst_ticks;
+reg [31:0] rst_ticks;
 
 always @(posedge CLK48M)
 begin
@@ -457,14 +487,17 @@ parameter SYS_STATE_COUNT_START_WAIT 		  = 0,
 			 SYS_STATE_READ_FROM_FTDI_PREPARE  = 1, 
 			 SYS_STATE_LATCH_DATA_FROM_FTDI 	  = 2,
 			 SYS_STATE_DATA_FROM_FTDI_ANALYSIS = 3,
-			 SYS_STATE_COUNT_STOP_WAIT 		  = 4;
+			 SYS_STATE_COUNT_STOP_WAIT 		  = 4,
+			 SYS_STATE_WRITE_TO_FTDI_PREPARE	  = 5,
+			 SYS_STATE_WRITE_TO_FTDI			  = 6;
+		 
 
 /************** SYSTEM STATE MACHINE **************/
 always@(posedge FCLK_OUT or negedge RESET)
 begin
 	if(RESET == 0)
 		begin
-			FWR   = 1;	
+		//	FWR   = 1;	
 			FRD   = 1;
 			FOE   = 1;
 			INPUT_REG = 0;
@@ -517,9 +550,23 @@ begin
 					begin
 						if(FRXF == 0)
 							begin
-								FWR <= 1;	
 								FOE <= 0;
 								system_state = SYS_STATE_READ_FROM_FTDI_PREPARE;
+							end
+						else if(FIFO_TO_FTDI_TX_RDY == ON)
+							begin
+								system_state = SYS_STATE_WRITE_TO_FTDI;
+							end
+					end
+				SYS_STATE_WRITE_TO_FTDI:
+					begin
+						if(FIFO_TO_FTDI_TX_RDY == OFF) 
+							begin
+								system_state = SYS_STATE_COUNT_STOP_WAIT;
+							end
+						else
+							begin
+								system_state = SYS_STATE_WRITE_TO_FTDI;
 							end
 					end
 				default : 				
@@ -527,6 +574,7 @@ begin
 			endcase
 		end
 end
+
 
 
 endmodule

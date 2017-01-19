@@ -17,6 +17,38 @@ reg [31:0] counter;
 /******************** BYTE STREAM TIMER ********************/ 
 // 10 Mbyte/s = 10*2^20 byte/s = 10*2^18 increments of 4-bit-depth number per sec -> increment counter every ~18 ticks
 // stream = 10.6*10^6 bytes/s 
+
+
+
+
+//parameter TEST_COUNT_INCREMENT_PERIOD = 187500;
+//reg [17:0] test_ticks; 
+//
+//always@(posedge clk or negedge n_rst)
+//begin
+//	if(n_rst == OFF)
+//		begin
+//			test_ticks = 0;
+//			counter = 0;//32'hfafbfcfd;
+//		end
+//	else 
+//		begin
+//			if(enable == ON)
+//				begin
+//					if(test_ticks < TEST_COUNT_INCREMENT_PERIOD)
+//						test_ticks = test_ticks + 1;
+//					else 
+//						begin
+//							counter = counter + 1;
+//							test_ticks = 0;
+//						end
+//				end
+//		end
+//end
+
+
+
+
 parameter COUNT_INCREMENT_PERIOD = 18 - 1;
 reg [4:0] ticks;
 
@@ -25,7 +57,7 @@ begin
 	if(n_rst == OFF)
 		begin
 			ticks = 0;
-			counter = 32'hfafbfcfd;
+			counter = 0;//32'hfafbfcfd;
 		end
 	else 
 		begin

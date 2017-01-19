@@ -41,8 +41,6 @@ module fifo (
 	data,
 	rdreq,
 	wrreq,
-	empty,
-	full,
 	q,
 	usedw);
 
@@ -50,19 +48,13 @@ module fifo (
 	input	[15:0]  data;
 	input	  rdreq;
 	input	  wrreq;
-	output	  empty;
-	output	  full;
 	output	[15:0]  q;
 	output	[9:0]  usedw;
 
 	wire [9:0] sub_wire0;
-	wire  sub_wire1;
-	wire  sub_wire2;
-	wire [15:0] sub_wire3;
+	wire [15:0] sub_wire1;
 	wire [9:0] usedw = sub_wire0[9:0];
-	wire  empty = sub_wire1;
-	wire  full = sub_wire2;
-	wire [15:0] q = sub_wire3[15:0];
+	wire [15:0] q = sub_wire1[15:0];
 
 	scfifo	scfifo_component (
 				.clock (clock),
@@ -70,12 +62,12 @@ module fifo (
 				.rdreq (rdreq),
 				.wrreq (wrreq),
 				.usedw (sub_wire0),
-				.empty (sub_wire1),
-				.full (sub_wire2),
-				.q (sub_wire3),
+				.q (sub_wire1),
 				.aclr (),
 				.almost_empty (),
 				.almost_full (),
+				.empty (),
+				.full (),
 				.sclr ());
 	defparam
 		scfifo_component.add_ram_output_register = "OFF",
@@ -102,8 +94,8 @@ endmodule
 // Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "1"
 // Retrieval info: PRIVATE: Clock NUMERIC "0"
 // Retrieval info: PRIVATE: Depth NUMERIC "1024"
-// Retrieval info: PRIVATE: Empty NUMERIC "1"
-// Retrieval info: PRIVATE: Full NUMERIC "1"
+// Retrieval info: PRIVATE: Empty NUMERIC "0"
+// Retrieval info: PRIVATE: Full NUMERIC "0"
 // Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
 // Retrieval info: PRIVATE: LE_BasedFIFO NUMERIC "0"
 // Retrieval info: PRIVATE: LegacyRREQ NUMERIC "1"
@@ -140,8 +132,6 @@ endmodule
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
 // Retrieval info: USED_PORT: data 0 0 16 0 INPUT NODEFVAL "data[15..0]"
-// Retrieval info: USED_PORT: empty 0 0 0 0 OUTPUT NODEFVAL "empty"
-// Retrieval info: USED_PORT: full 0 0 0 0 OUTPUT NODEFVAL "full"
 // Retrieval info: USED_PORT: q 0 0 16 0 OUTPUT NODEFVAL "q[15..0]"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: usedw 0 0 10 0 OUTPUT NODEFVAL "usedw[9..0]"
@@ -150,8 +140,6 @@ endmodule
 // Retrieval info: CONNECT: @data 0 0 16 0 data 0 0 16 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
-// Retrieval info: CONNECT: empty 0 0 0 0 @empty 0 0 0 0
-// Retrieval info: CONNECT: full 0 0 0 0 @full 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 16 0 @q 0 0 16 0
 // Retrieval info: CONNECT: usedw 0 0 10 0 @usedw 0 0 10 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo.v TRUE
