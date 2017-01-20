@@ -33,35 +33,14 @@ begin
 end			 
 			 
 
-reg sync_RDREQ;	
-
-assign rdreq = ((ftdi_rx_rdy == ON) & (FTXE == 0) & (usedw > 0)); //? sync_RDREQ : OFF;		 
-
-/*			 
-always@(posedge rdclk)
-begin
-	if(ftdi_rx_rdy == ON)
-		begin
-			if(usedw > 0)
-				begin
-					sync_RDREQ = ON;
-				end
-			else	
-				begin
-					sync_RDREQ = OFF;
-				end
-		end
-	else
-		begin
-			sync_RDREQ = OFF;
-		end
-end
-*/
+assign rdreq = ((ftdi_rx_rdy == ON) & (FTXE == 0) & (usedw > 0)); 
 			 
 //assign fifo_tx_rdy = (wrreq == OFF) & (usedw > 0);
 //assign rdreq = fifo_tx_rdy & ftdi_rx_rdy;
+//assign FWR = (rdreq == ON) ? 0 : 1;
 
 assign FWR = ((FTXE == 0) & (usedw > 0)) ? sync_FWR : 1;
+
 reg sync_FWR;
 
 always@(posedge rdclk)
@@ -70,13 +49,13 @@ begin
 		begin
 			sync_FWR = OFF;
 		end
-	else
+	else if (fifo_tx_rdy == OFF)
 		begin
 			sync_FWR = ON;
 		end
 end
 
-//assign FWR = (rdreq == ON) ? 0 : 1;
+
  			 	
 				
 endmodule 
