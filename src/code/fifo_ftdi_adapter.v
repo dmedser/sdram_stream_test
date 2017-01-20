@@ -1,6 +1,7 @@
 module fifo_ftdi_adapter (
-	input      [10:0]  usedw,
-	output 				fifo_tx_rdy,
+	input 				rdclk, 
+	input     [10:0]  usedw,
+	output reg			fifo_tx_rdy,
 	input 				ftdi_rx_rdy,
 	output 				FWR,
 	input 				FTXE,
@@ -8,13 +9,74 @@ module fifo_ftdi_adapter (
 	input 				wrreq
 );
 
-
 parameter OFF = 0,
 			 ON  = 1;
 			 
-assign fifo_tx_rdy = (wrreq == OFF) && (usedw > 0);
-assign rdreq = fifo_tx_rdy & ftdi_rx_rdy;
-assign FWR = (rdreq == ON) ? 0 : 1;
+
+always@(posedge rdclk)
+begin
+	if(wrreq == OFF)
+		begin
+			if(usedw > 0)
+				begin
+					fifo_tx_rdy = ON; 
+				end
+			else
+				begin
+					fifo_tx_rdy = OFF;
+				end
+		end
+	else
+		begin
+			fifo_tx_rdy = OFF;
+		end
+end			 
+			 
+
+reg sync_RDREQ;	
+
+assign rdreq = ((ftdi_rx_rdy == ON) & (FTXE == 0) & (usedw > 0)); //? sync_RDREQ : OFF;		 
+
+/*			 
+always@(posedge rdclk)
+begin
+	if(ftdi_rx_rdy == ON)
+		begin
+			if(usedw > 0)
+				begin
+					sync_RDREQ = ON;
+				end
+			else	
+				begin
+					sync_RDREQ = OFF;
+				end
+		end
+	else
+		begin
+			sync_RDREQ = OFF;
+		end
+end
+*/
+			 
+//assign fifo_tx_rdy = (wrreq == OFF) & (usedw > 0);
+//assign rdreq = fifo_tx_rdy & ftdi_rx_rdy;
+
+assign FWR = ((FTXE == 0) & (usedw > 0)) ? sync_FWR : 1;
+reg sync_FWR;
+
+always@(posedge rdclk)
+begin
+	if(rdreq == ON)
+		begin
+			sync_FWR = OFF;
+		end
+	else
+		begin
+			sync_FWR = ON;
+		end
+end
+
+//assign FWR = (rdreq == ON) ? 0 : 1;
  			 	
 				
 endmodule 

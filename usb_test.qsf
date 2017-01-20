@@ -330,22 +330,6 @@ set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[23] -t
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[24] -to "fifo_ftdi_adapter:ff_adapter|usedw[8]" -section_id auto_signaltap_0
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[25] -to "fifo_ftdi_adapter:ff_adapter|usedw[9]" -section_id auto_signaltap_0
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[26] -to "fifo_ftdi_adapter:ff_adapter|wrreq" -section_id auto_signaltap_0
-set_global_assignment -name SIGNALTAP_FILE src/code/ffa.stp
-set_global_assignment -name VERILOG_FILE src/code/fifo_to_sdram_rd_controller.v
-set_global_assignment -name VERILOG_FILE src/code/fifo_ftdi_adapter.v
-set_global_assignment -name VERILOG_FILE src/code/cmd_controller.v
-set_global_assignment -name VERILOG_INCLUDE_FILE src/code/mode_reg_defs.vh
-set_global_assignment -name QIP_FILE src/ip/pll/pll.qip
-set_global_assignment -name VERILOG_FILE src/code/usb_test.v
-set_global_assignment -name QIP_FILE src/ip/fifo/fifo.qip
-set_global_assignment -name QIP_FILE src/ip/ram_1_port/ram_1_port.qip
-set_global_assignment -name VERILOG_FILE src/code/sdram_controller.v
-set_global_assignment -name VERILOG_INCLUDE_FILE src/code/commands.vh
-set_global_assignment -name VERILOG_FILE src/code/stream_generator.v
-set_global_assignment -name VERILOG_FILE src/code/gen_fifo_adapter.v
-set_global_assignment -name VERILOG_FILE src/code/fifo_from_sdram_rd_controller.v
-set_global_assignment -name VERILOG_FILE src/code/s16s8adapter.v
-set_global_assignment -name QIP_FILE src/code/fifo_rw_diff_clk.qip
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[27] -to "fifo_rw_diff_clk:fifo_to_ftdi|data[0]" -section_id auto_signaltap_0
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[28] -to "fifo_rw_diff_clk:fifo_to_ftdi|data[1]" -section_id auto_signaltap_0
 set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[29] -to "fifo_rw_diff_clk:fifo_to_ftdi|data[2]" -section_id auto_signaltap_0
@@ -390,5 +374,21 @@ set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK=00
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK_LENGTH=163" -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_LOWORD=606" -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_HIWORD=65306" -section_id auto_signaltap_0
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name SIGNALTAP_FILE src/code/ffa.stp
+set_global_assignment -name VERILOG_FILE src/code/fifo_to_sdram_rd_controller.v
+set_global_assignment -name VERILOG_FILE src/code/fifo_ftdi_adapter.v
+set_global_assignment -name VERILOG_FILE src/code/cmd_controller.v
+set_global_assignment -name VERILOG_INCLUDE_FILE src/code/mode_reg_defs.vh
+set_global_assignment -name QIP_FILE src/ip/pll/pll.qip
+set_global_assignment -name VERILOG_FILE src/code/usb_test.v
+set_global_assignment -name QIP_FILE src/ip/fifo/fifo.qip
+set_global_assignment -name QIP_FILE src/ip/ram_1_port/ram_1_port.qip
+set_global_assignment -name VERILOG_FILE src/code/sdram_controller.v
+set_global_assignment -name VERILOG_INCLUDE_FILE src/code/commands.vh
+set_global_assignment -name VERILOG_FILE src/code/stream_generator.v
+set_global_assignment -name VERILOG_FILE src/code/gen_fifo_adapter.v
+set_global_assignment -name VERILOG_FILE src/code/fifo_from_sdram_rd_controller.v
+set_global_assignment -name VERILOG_FILE src/code/s16s8adapter.v
+set_global_assignment -name QIP_FILE src/code/fifo_rw_diff_clk.qip
 set_global_assignment -name SLD_FILE db/ffa_auto_stripped.stp
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

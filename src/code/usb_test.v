@@ -435,6 +435,7 @@ wire [7:0] FIFO_TO_FTDI_Q;
 wire [9:0] FIFO_TO_FTDI_USEDW;
 
 fifo_ftdi_adapter ff_adapter (
+	.rdclk(FCLK_OUT),
 	.usedw(FIFO_TO_FTDI_USEDW),
 	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
 	.rdreq(FIFO_TO_FTDI_RDREQ),
