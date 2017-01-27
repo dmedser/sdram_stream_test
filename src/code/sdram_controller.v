@@ -17,7 +17,6 @@ module SDRAM_controller (
 	
 	
 	/* USER INTERFACE */
-	input [14:0] addr,
 	inout [15:0] data,
 
 	output reg sdram_rfo, 	// Ready For Operation, выставляется по готовности после ресета
@@ -27,13 +26,24 @@ module SDRAM_controller (
 	output reg sdram_rx_rdy,  	// SDRAM готова принимать данные 
 	output reg sdram_q_asserted,
 	output [15:0] sdram_q
+	//output SDRAM_IS_EMPTY
 );
 
 `include "C:/Users/dell/Documents/Quartus/usb_test/src/code/commands.vh"
 `include "C:/Users/dell/Documents/Quartus/usb_test/src/code/mode_reg_defs.vh"
 
 reg[3:0] cmd;
-reg SDRAM_IS_EMPTY;
+
+`define WR_BANK	wr_ptr[14:13] 
+`define WR_ROW		wr_ptr[12:0]
+
+`define RD_BANK	rd_ptr[14:13]
+`define RD_ROW		rd_ptr[12:0]
+
+reg[14:0] wr_ptr;
+reg[14:0] rd_ptr;
+
+assign SDRAM_IS_EMPTY = (wr_ptr == rd_ptr);
 
 assign DQ = (sdram_state == SDRAM_STATE_WRITE)? data : 16'hzzzz;
 
@@ -187,7 +197,8 @@ task reset_sdram_controller;
 		sdram_rfo = OFF;
 		A   = 0;
 		BA  = 0;
-		SDRAM_IS_EMPTY = TRUE;
+		wr_ptr = 0;		
+		rd_ptr = 0;		
 		sdram_state = SDRAM_STATE_INIT;	
 	end
 endtask
@@ -220,7 +231,7 @@ task sdram_init;
 			(t100us + tCK + ADDR_ASSERT_TIME_OFFSET):
 				begin
 					A[10] = ON; 		// All banks precharged
-					cmd = `CMD_NOP;	// Т.к. не выполнится default
+					cmd = `CMD_NOP;	
 				end
 			(t100us + tCK + tRP):
 				begin
@@ -285,7 +296,7 @@ task sdram_state_control;
 				cmd = `CMD_ACTIVE;
 				sdram_state = SDRAM_STATE_READ;
 			end
-	else if(refresh_counter < REFRESHES_PER_tRFC)
+		else if(refresh_counter < REFRESHES_PER_tRFC)
 			begin
 				cmd = `CMD_AUTO_REFRESH;
 				refresh_counter = refresh_counter + 1;
@@ -299,13 +310,13 @@ endtask
 reg [9:0] wr_time;
 parameter PAGE_WRITE_PERIOD = 512 + 2;
 
-parameter tWRITE      	  = 2 - 1,
-			 tWR_BURST_TERM  = PAGE_WRITE_PERIOD - 1,
-			 tWRITE_COMPLETE = PAGE_WRITE_PERIOD + 1 - 1;
+parameter tSDRAM_RX_RDY 	= 0,
+			 tCMD_WR 			= tSDRAM_RX_RDY + 1,
+			 tCMD_BT_W 			= PAGE_WRITE_PERIOD - 1,
+			 tCMD_PRC_W 		= tCMD_BT_W + 1,
+			 tWRITE_COMPLETE 	= tCMD_PRC_W + tRP; 
 			 
-parameter tSDRAM_RX_RDY 			= 0,
-			 tFIRST_BYTE_IS_WRITTEN = 3;
-
+			 
 always@(posedge clk or negedge n_rst)
 begin
 	if(n_rst == 0)
@@ -340,24 +351,28 @@ task sdram_write;
 		case(wr_time)
 			tSDRAM_RX_RDY:
 				begin
+					A  = `WR_ROW;			
+					BA = `WR_BANK;			
 					sdram_rx_rdy = ON;
 					cmd = `CMD_NOP;
 				end
-			tWRITE:
+			tCMD_WR:
 				begin
+					A = 0;					
 					cmd = `CMD_WRITE;
 					sdram_rx_rdy = OFF;
 				end
-			tFIRST_BYTE_IS_WRITTEN:
-				begin
-					SDRAM_IS_EMPTY = FALSE;
-				end
-			tWR_BURST_TERM:
+			tCMD_BT_W:
 				begin
 					cmd = `CMD_BURST_TERMINATE;
 				end
+			tCMD_PRC_W:
+				begin
+					cmd = `CMD_PRECHARGE;
+				end
 			tWRITE_COMPLETE:
 				begin
+					wr_ptr = wr_ptr + 1;		
 					cmd = `CMD_NOP;
 					sdram_state = SDRAM_STATE_CONTROL;
 				end
@@ -374,10 +389,12 @@ endtask
 
 reg [9:0] rd_time;
 parameter PAGE_READ_PERIOD = 512 + 4;
-parameter tREAD       = 2 - 1,
-			 tDATA_OUT   = 4 + 1 - 1,
-			 tRD_BURST_TERM = PAGE_READ_PERIOD - 1,
-			 tREAD_COMPLETE = PAGE_READ_PERIOD + 1 - 1;
+parameter tCMD_ACT_R		 = 0,
+			 tCMD_RD        = tCMD_ACT_R + 1,
+			 tDATA_OUT   	 = tCMD_RD + 3,
+			 tCMD_BT_R      = PAGE_READ_PERIOD - 1,
+			 tCMD_PRC_R     = tCMD_BT_R + 1,
+			 tREAD_COMPLETE = tCMD_PRC_R + tRP;
 
 always@(posedge clk or negedge n_rst)
 begin
@@ -411,23 +428,34 @@ end
 task sdram_read;
 	begin
 		case(rd_time)
-			tREAD:
+			tCMD_ACT_R:						
+				begin							
+					A  = `RD_ROW;			
+					BA = `RD_BANK;			
+					cmd = `CMD_NOP; 		
+				end							
+			tCMD_RD:
 				begin
+					A = 0;					
 					cmd = `CMD_READ;
 				end
 			tDATA_OUT:
 				begin
 					sdram_q_asserted = ON;
 				end
-			tRD_BURST_TERM:
+			tCMD_BT_R:
 				begin
 					cmd = `CMD_BURST_TERMINATE;
+				end
+			tCMD_PRC_R:
+				begin
+					cmd = `CMD_PRECHARGE;
+					sdram_q_asserted = OFF;
 				end
 			tREAD_COMPLETE:
 				begin
 					cmd = `CMD_NOP;
-					sdram_q_asserted = OFF;
-					SDRAM_IS_EMPTY = TRUE;
+					rd_ptr = rd_ptr + 1;		//
 					sdram_state = SDRAM_STATE_CONTROL;
 				end
 			default:

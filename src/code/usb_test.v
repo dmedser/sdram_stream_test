@@ -2,7 +2,7 @@ module usb_test (
 
 /*********************** CLK **********************/
 		
-		input CLK,
+		input CLK_24,
 
 /******************* SDRAM DD33 *******************/
 
@@ -287,28 +287,30 @@ assign FH4_C2_DE	= 0;
 parameter OFF = 0,
 			 ON  = 1;
 
-wire CLK48M;
-wire CLK48M_S;
+wire STP_CLK_60x8_480;
+wire STP_CLK_48x4_192;			 
+wire CLK_48;
+wire CLK_48_S;
 wire [15:0] SDRAM_DATA;
 wire FIFO_TO_SDRAM_TX_RDY;
 wire SDRAM_RX_RDY;
 wire SDRAM_Q_ASSERTED;
 wire [15:0] SDRAM_Q;
 
-assign SDRAM_CLK  = CLK48M_S; 
+assign SDRAM_CLK  = CLK_48_S; 
 
 pll _pll
 (
-	.inclk0(CLK), 
-	.c0(),
-	.c1(CLK48M),
-	.c2(),
-	.c3(CLK48M_S)
+	.inclk0(CLK_24), 
+	.c0(STP_CLK_60x8_480),
+	.c1(CLK_48),
+	.c2(STP_CLK_48x4_192),
+	.c3(CLK_48_S)
 );
 
 SDRAM_controller sdram_c 
 (
-	.clk(CLK48M),
+	.clk(CLK_48),
 	.n_rst(RESET),
 	
 	/***** TO SDRAM *****/
@@ -324,7 +326,6 @@ SDRAM_controller sdram_c
 	.DQ(SDRAM_DQ),
 	
 	/******* USER ********/
-	.addr(SDRAM_ADDRESS),
 	.data(SDRAM_DATA),
 	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
@@ -333,18 +334,13 @@ SDRAM_controller sdram_c
 	.sdram_rfo(SDRAM_RFO)
 );
 
-
-assign TP[6] = SDRAM_CLK;
-assign TP[2] = SDRAM_nWE;
-assign TP[4] = SDRAM_nRAS;
-assign TP[5] = 0;
 assign FU_D[7:0] = (FOE == 1) ? FIFO_TO_FTDI_Q : 8'hzz;
 
 reg RESET;
 reg [7:0] INPUT_REG;
 
 stream_generator gen (
-	.clk(CLK48M),
+	.clk(CLK_48),
 	.n_rst(RESET),
 	.enable(ENABLE_GENERATOR),
 	.stream_32(STREAM_FROM_GEN_TO_ADAPTER),
@@ -357,7 +353,7 @@ wire 			NUM_32_RDY;
 wire			ENABLE_GENERATOR = ((count_status == COUNT_START) && (SDRAM_RFO == ON)); 
 
 adapter_32_to_16 gf_adapter (
-	.clk(CLK48M),
+	.clk(CLK_48),
 	.stream_32(STREAM_FROM_GEN_TO_ADAPTER),
 	.num_32_rdy(NUM_32_RDY),
 	.stream_16(FIFO_TO_SDRAM_DATA),
@@ -367,7 +363,7 @@ adapter_32_to_16 gf_adapter (
 
 fifo fifo_to_sdram 
 (
-	.clock(CLK48M),
+	.clock(CLK_48),
 	.data(FIFO_TO_SDRAM_DATA),
 	.rdreq(FIFO_TO_SDRAM_RD_REQ),
 	.wrreq(FIFO_TO_SDRAM_WR_REQ),
@@ -381,7 +377,7 @@ wire [15:0] FIFO_TO_SDRAM_DATA;
 wire 			FIFO_TO_SDRAM_WR_REQ;
 
 fifo_to_sdram_rd_controller fifo_to_sdram_rd_c (
-	.clk(CLK48M),
+	.clk(CLK_48),
 	.usedw(USEDW),
 	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
@@ -390,7 +386,7 @@ fifo_to_sdram_rd_controller fifo_to_sdram_rd_c (
 
 fifo fifo_from_sdram
 (
-	.clock(CLK48M),
+	.clock(CLK_48),
 	.data(SDRAM_Q),
 	.rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.wrreq(SDRAM_Q_ASSERTED),
@@ -404,7 +400,7 @@ wire 		   FIFO_FROM_SDRAM_RDREQ;
 
 fifo_from_sdram_rd_controller 
 (
-	.clk(CLK48M),
+	.clk(CLK_48),
 	.usedw(FIFO_FROM_SDRAM_USEDW),
 	.rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.byte_switcher(BYTE_SWITCHER),
@@ -421,7 +417,7 @@ s16s8_adapter s16s8_a(
 wire[7:0] FIFO_FROM_SDRAM_Q_8;
 
 fifo_rw_diff_clk fifo_to_ftdi (
-	.wrclk(CLK48M),
+	.wrclk(CLK_48),
 	.data(FIFO_FROM_SDRAM_Q_8),
 	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
 	.rdclk(FCLK_OUT),
@@ -451,7 +447,7 @@ wire FTDI_RX_RDY = ((system_state == SYS_STATE_COUNT_STOP_WAIT) || (system_state
 parameter TICKS_IN_4_SEC = 192000000 - 1;
 reg [31:0] rst_ticks;
 
-always @(posedge CLK48M)
+always @(posedge CLK_48)
 begin
 	if(rst_ticks < TICKS_IN_4_SEC)
 		begin
@@ -489,8 +485,7 @@ parameter SYS_STATE_COUNT_START_WAIT 		  = 0,
 			 SYS_STATE_LATCH_DATA_FROM_FTDI 	  = 2,
 			 SYS_STATE_DATA_FROM_FTDI_ANALYSIS = 3,
 			 SYS_STATE_COUNT_STOP_WAIT 		  = 4,
-			 SYS_STATE_WRITE_TO_FTDI_PREPARE	  = 5,
-			 SYS_STATE_WRITE_TO_FTDI			  = 6;
+			 SYS_STATE_WRITE_TO_FTDI			  = 5;
 		 
 
 /************** SYSTEM STATE MACHINE **************/
@@ -519,6 +514,7 @@ begin
 							begin
 								FOE = 1;
 								FRD = 1;
+								system_state = SYS_STATE_COUNT_START_WAIT;
 							end
 					end
 				SYS_STATE_READ_FROM_FTDI_PREPARE: 
