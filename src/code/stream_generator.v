@@ -1,16 +1,16 @@
 module stream_generator (
 	input  clk,
-	input  enable,
+	input  en,
 	input  n_rst, 
-	output [31:0] stream_32,
-	output  num_32_rdy
+	output [31:0] s32,
+	output  n32rdy
 );
 
 parameter OFF = 0,
 			 ON  = 1;
 
-assign stream_32  = counter;
-assign num_32_rdy = ((enable == ON) && (ticks == 0));
+assign s32  = counter;
+assign n32rdy = ((en == ON) && (ticks == 0));
 
 reg [31:0] counter;
 
@@ -24,7 +24,9 @@ parameter MB10_COUNT_INCREMENT_PERIOD = 18 - 1;
 //reg[17:0] ticks;
 //parameter KB1_COUNT_INCREMENT_PERIOD = 187500;
 
-parameter MIN_COUNT_INCREMENT_PERIOD = 12 - 1;
+parameter MIN_COUNT_INCREMENT_PERIOD = 11 - 1; 
+
+parameter TEST_COUNT_INCREMENT_PERIOD = 10 - 1; 
 
 always@(posedge clk or negedge n_rst)
 begin
@@ -35,9 +37,9 @@ begin
 		end
 	else 
 		begin
-			if(enable == ON)
+			if(en == ON)
 				begin
-					if(ticks < MIN_COUNT_INCREMENT_PERIOD)
+					if(ticks < TEST_COUNT_INCREMENT_PERIOD)
 						ticks = ticks + 1;
 					else 
 						begin
