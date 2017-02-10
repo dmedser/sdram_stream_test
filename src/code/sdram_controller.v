@@ -26,7 +26,6 @@ module SDRAM_controller (
 	output reg sdram_rx_rdy,  	// SDRAM готова принимать данные 
 	output reg sdram_q_asserted,
 	output [15:0] sdram_q
-	//output SDRAM_IS_EMPTY
 );
 
 `include "C:/Users/dell/Documents/Quartus/usb_test/src/code/commands.vh"
@@ -353,17 +352,17 @@ task sdram_write;
 				begin
 					A  = `WR_ROW;			
 					BA = `WR_BANK;			
-					sdram_rx_rdy = ON;
 					cmd = `CMD_NOP;
+					sdram_rx_rdy = ON;
 				end
 			tCMD_WR:
 				begin
 					A = 0;					
 					cmd = `CMD_WRITE;
-					sdram_rx_rdy = OFF;
 				end
 			tCMD_BT_W:
 				begin
+					sdram_rx_rdy = OFF;
 					cmd = `CMD_BURST_TERMINATE;
 				end
 			tCMD_PRC_W:

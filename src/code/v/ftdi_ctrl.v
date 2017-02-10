@@ -4,11 +4,11 @@ module ftdi_controller (
 	input   rxf,
 	output  reg rd,
 	input   txe,
-	output  reg wr,
+	output  wr,
 	
 	input   n_rst,
-	input   tx_rdy,
-	output  reg rx_rdy, 
+	input   fifo_tx_rdy,
+	output  ftdi_rx_rdy, 
 	output  reg q_asserted
 );
 
@@ -60,29 +60,35 @@ task reset;
 	begin
 		oe   = 1;
 		rd   = 1;
-		wr   = 1;
 		q_asserted = OFF;
 		fc_state = FC_STATE_CTRL;
 	end
 endtask
-	
-	
+
+
 task control;
 	begin
 		if(rxf == 0)
 			begin
 				oe = 0;
-				rd = 1;
 				fc_state = FC_STATE_RD_PREPARE;
 			end
-		else if(tx_rdy == ON)
+		else if(txe == 0)
 			begin
-				fc_state = FC_STATE_WR;
+				if(fifo_tx_rdy == ON)
+					begin
+						oe = 1;
+						fc_state = FC_STATE_WR;
+					end
+				else	
+					begin
+						oe = 1;
+						fc_state = FC_STATE_CTRL;
+					end
 			end
 		else
 			begin
 				oe = 1;
-				rd = 1;
 				fc_state = FC_STATE_CTRL;
 			end
 	end
@@ -110,29 +116,43 @@ endtask
 
 task write;
 	begin
-		if(tx_rdy == OFF) 
+		if(fifo_tx_rdy == OFF) 
 			begin
-				rx_rdy = OFF;
-				wr = 1;
 				fc_state = FC_STATE_CTRL;
 			end
 		else
 			begin
-				if(txe == 0)
-					begin
-						rx_rdy = ON;
-						wr = 0;
-						fc_state = FC_STATE_WR;
-					end
-				else
-					begin
-						rx_rdy = OFF;
-						wr = 1;
-						fc_state = FC_STATE_WR;
-					end
+				fc_state = FC_STATE_WR;
 			end
 	end	
 endtask
+
+assign ftdi_rx_rdy = (fifo_tx_rdy == ON) && (txe == 0) && (fc_state == FC_STATE_WR);
+
+wire rx_tx_rdy = (ftdi_rx_rdy == ON) && (fifo_tx_rdy == ON);
+
+assign wr = (rx_tx_rdy == ON) ? sync_wr : 1;
+
+reg sync_wr;
+
+always@(posedge clk)
+begin
+	if(n_rst == 0)
+		begin
+			sync_wr = 1;
+		end
+	else if(fifo_tx_rdy == ON)
+		begin
+			if(ftdi_rx_rdy == ON)
+				begin
+					sync_wr = 0;
+				end
+		end
+	else
+		begin
+			sync_wr = 1;
+		end
+end
 
 
 endmodule 

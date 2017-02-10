@@ -281,13 +281,13 @@ ftdi_controller FTDI_CTRL (
 	.rd(FRD),
 	.txe(FTXE),
 	.wr(FWR),
-	.tx_rdy(FIFO_TO_FTDI_TX_RDY),
-	.rx_rdy(FTDI_RX_RDY), 
+	.fifo_tx_rdy(FIFO_TO_FTDI_TX_RDY),
+	.ftdi_rx_rdy(FTDI_RX_RDY), 
 	.q_asserted(FTDI_Q_ASSERTED)
 );
 
 s_gen_controller S_GEN_CTRL (
-	.clk(CLK_48),
+	.clk(FCLK_OUT),
 	.n_rst(N_RST),
 	.wrreq(FTDI_Q_ASSERTED),
 	.sdram_rfo(SDRAM_RFO),
@@ -322,17 +322,19 @@ fifo FIFO_TO_SDRAM
 	.rdreq(FIFO_TO_SDRAM_RD_REQ),
 	.wrreq(FIFO_TO_SDRAM_WR_REQ),
 	.q(SDRAM_DATA),
-	.usedw(FIFO_TO_SDRAM_USEDW)
+	.usedw(FIFO_TO_SDRAM_USEDW),
+	.empty(FIFO_TO_SDRAM_EMPTY)
 );
 
 wire [9:0] FIFO_TO_SDRAM_USEDW;
 
 fifo_to_sdram_rd_controller FIFO_TO_SDRAM_RD_CTRL (
 	.clk(CLK_48),
-	.usedw(FIFO_TO_SDRAM_USEDW),
+	.fifo_usedw(FIFO_TO_SDRAM_USEDW),
+	.fifo_empty(FIFO_TO_SDRAM_EMPTY),
 	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
-	.rdreq(FIFO_TO_SDRAM_RD_REQ)
+	.fifo_rdreq(FIFO_TO_SDRAM_RD_REQ)
 );
 
 wire [15:0] SDRAM_DATA;
@@ -395,26 +397,27 @@ s16s8_adapter S16S8_A(
 
 wire [7:0] FIFO_FROM_SDRAM_Q_8;
 
-fifo_rw_diff_clk FIFO_TO_FTDI (
+fifo_rc_wc FIFO_TO_FTDI (
+	.rdclk(FCLK_OUT),
 	.wrclk(CLK_48),
 	.data(FIFO_FROM_SDRAM_Q_8),
+	.q(FIFO_TO_FTDI_Q),
+	.rdempty(FIFO_TO_FTDI_EMPTY),
+	.wrusedw(FIFO_TO_FTDI_USEDW),
 	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
-	.rdclk(FCLK_OUT),
-	.rdreq(FIFO_TO_FTDI_RDREQ),
-	.rdusedw(FIFO_TO_FTDI_USEDW),
-	.q(FIFO_TO_FTDI_Q)
+	.rdreq(FIFO_TO_FTDI_RDREQ)
 );
 
 wire [7:0] FIFO_TO_FTDI_Q;
 wire [10:0] FIFO_TO_FTDI_USEDW;
 
 fifo_to_ftdi_rd_controller FIFO_TO_FTDI_RD_CTRL(
-	.clk(FCLK_OUT),
+	.ftdi_clk(FCLK_OUT),
 	.fifo_usedw(FIFO_TO_FTDI_USEDW),
+	.fifo_empty(FIFO_TO_FTDI_EMPTY),
 	.fifo_tx_rdy(FIFO_TO_FTDI_TX_RDY),
 	.ftdi_rx_rdy(FTDI_RX_RDY),
-	.fifo_rdreq(FIFO_TO_FTDI_RDREQ),
-	.fifo_wrreq(FIFO_FROM_SDRAM_Q_ASSERTED)
+	.fifo_rdreq(FIFO_TO_FTDI_RDREQ)
 );
 
 

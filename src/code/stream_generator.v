@@ -26,14 +26,14 @@ parameter MB10_COUNT_INCREMENT_PERIOD = 18 - 1;
 
 parameter MIN_COUNT_INCREMENT_PERIOD = 11 - 1; 
 
-parameter TEST_COUNT_INCREMENT_PERIOD = 10 - 1; 
+parameter TEST_COUNT_INCREMENT_PERIOD = 3 - 1; 
 
 always@(posedge clk or negedge n_rst)
 begin
 	if(n_rst == OFF)
 		begin
 			ticks = 0;
-			counter =  0;//32'hfafbfcfd;
+			counter = 32'hfafbfcfd;
 		end
 	else 
 		begin

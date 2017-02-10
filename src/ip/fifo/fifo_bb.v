@@ -36,6 +36,7 @@ module fifo (
 	data,
 	rdreq,
 	wrreq,
+	empty,
 	q,
 	usedw);
 
@@ -43,6 +44,7 @@ module fifo (
 	input	[15:0]  data;
 	input	  rdreq;
 	input	  wrreq;
+	output	  empty;
 	output	[15:0]  q;
 	output	[9:0]  usedw;
 
@@ -58,7 +60,7 @@ endmodule
 // Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "1"
 // Retrieval info: PRIVATE: Clock NUMERIC "0"
 // Retrieval info: PRIVATE: Depth NUMERIC "1024"
-// Retrieval info: PRIVATE: Empty NUMERIC "0"
+// Retrieval info: PRIVATE: Empty NUMERIC "1"
 // Retrieval info: PRIVATE: Full NUMERIC "0"
 // Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
 // Retrieval info: PRIVATE: LE_BasedFIFO NUMERIC "0"
@@ -96,6 +98,7 @@ endmodule
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
 // Retrieval info: USED_PORT: data 0 0 16 0 INPUT NODEFVAL "data[15..0]"
+// Retrieval info: USED_PORT: empty 0 0 0 0 OUTPUT NODEFVAL "empty"
 // Retrieval info: USED_PORT: q 0 0 16 0 OUTPUT NODEFVAL "q[15..0]"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: usedw 0 0 10 0 OUTPUT NODEFVAL "usedw[9..0]"
@@ -104,6 +107,7 @@ endmodule
 // Retrieval info: CONNECT: @data 0 0 16 0 data 0 0 16 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
+// Retrieval info: CONNECT: empty 0 0 0 0 @empty 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 16 0 @q 0 0 16 0
 // Retrieval info: CONNECT: usedw 0 0 10 0 @usedw 0 0 10 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo.v TRUE
