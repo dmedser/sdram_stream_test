@@ -10,7 +10,7 @@ module s16s8_adapter (
 parameter LOW  = 0,
 			 HIGH = 1;
 
-assign s8 = (byte_switcher == LOW) ? `L8 : `H8;  
+assign s8 = (byte_switcher == LOW) ? `H8 : `L8;  
 
 
 endmodule

@@ -322,8 +322,7 @@ fifo FIFO_TO_SDRAM
 	.rdreq(FIFO_TO_SDRAM_RD_REQ),
 	.wrreq(FIFO_TO_SDRAM_WR_REQ),
 	.q(SDRAM_DATA),
-	.usedw(FIFO_TO_SDRAM_USEDW),
-	.empty(FIFO_TO_SDRAM_EMPTY)
+	.usedw(FIFO_TO_SDRAM_USEDW)
 );
 
 wire [9:0] FIFO_TO_SDRAM_USEDW;
@@ -331,7 +330,6 @@ wire [9:0] FIFO_TO_SDRAM_USEDW;
 fifo_to_sdram_rd_controller FIFO_TO_SDRAM_RD_CTRL (
 	.clk(CLK_48),
 	.fifo_usedw(FIFO_TO_SDRAM_USEDW),
-	.fifo_empty(FIFO_TO_SDRAM_EMPTY),
 	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.fifo_rdreq(FIFO_TO_SDRAM_RD_REQ)
@@ -383,8 +381,8 @@ wire [15:0] FIFO_FROM_SDRAM_Q_16;
 fifo_from_sdram_rd_controller FIFO_FROM_SDRAM_RD_CTRL
 (
 	.clk(CLK_48),
-	.usedw(FIFO_FROM_SDRAM_USEDW),
-	.rdreq(FIFO_FROM_SDRAM_RDREQ),
+	.fifo_usedw(FIFO_FROM_SDRAM_USEDW),
+	.fifo_rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.byte_switcher(BYTE_SWITCHER),
 	.fifo_q_asserted(FIFO_FROM_SDRAM_Q_ASSERTED)
 );

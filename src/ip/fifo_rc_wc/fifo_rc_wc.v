@@ -44,6 +44,7 @@ module fifo_rc_wc (
 	wrreq,
 	q,
 	rdempty,
+	wrfull,
 	wrusedw);
 
 	input	[7:0]  data;
@@ -53,29 +54,32 @@ module fifo_rc_wc (
 	input	  wrreq;
 	output	[7:0]  q;
 	output	  rdempty;
+	output	  wrfull;
 	output	[10:0]  wrusedw;
 
-	wire [7:0] sub_wire0;
-	wire  sub_wire1;
-	wire [10:0] sub_wire2;
-	wire [7:0] q = sub_wire0[7:0];
-	wire  rdempty = sub_wire1;
-	wire [10:0] wrusedw = sub_wire2[10:0];
+	wire  sub_wire0;
+	wire [7:0] sub_wire1;
+	wire  sub_wire2;
+	wire [10:0] sub_wire3;
+	wire  wrfull = sub_wire0;
+	wire [7:0] q = sub_wire1[7:0];
+	wire  rdempty = sub_wire2;
+	wire [10:0] wrusedw = sub_wire3[10:0];
 
 	dcfifo	dcfifo_component (
-				.data (data),
 				.rdclk (rdclk),
-				.rdreq (rdreq),
 				.wrclk (wrclk),
 				.wrreq (wrreq),
-				.q (sub_wire0),
-				.rdempty (sub_wire1),
-				.wrusedw (sub_wire2),
+				.data (data),
+				.rdreq (rdreq),
+				.wrfull (sub_wire0),
+				.q (sub_wire1),
+				.rdempty (sub_wire2),
+				.wrusedw (sub_wire3),
 				.aclr (),
 				.rdfull (),
 				.rdusedw (),
-				.wrempty (),
-				.wrfull ());
+				.wrempty ());
 	defparam
 		dcfifo_component.intended_device_family = "Cyclone III",
 		dcfifo_component.lpm_numwords = 2048,
@@ -125,7 +129,7 @@ endmodule
 // Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
-// Retrieval info: PRIVATE: wsFull NUMERIC "0"
+// Retrieval info: PRIVATE: wsFull NUMERIC "1"
 // Retrieval info: PRIVATE: wsUsedW NUMERIC "1"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
@@ -145,6 +149,7 @@ endmodule
 // Retrieval info: USED_PORT: rdempty 0 0 0 0 OUTPUT NODEFVAL "rdempty"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
+// Retrieval info: USED_PORT: wrfull 0 0 0 0 OUTPUT NODEFVAL "wrfull"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
 // Retrieval info: USED_PORT: wrusedw 0 0 11 0 OUTPUT NODEFVAL "wrusedw[10..0]"
 // Retrieval info: CONNECT: @data 0 0 8 0 data 0 0 8 0
@@ -154,6 +159,7 @@ endmodule
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 8 0 @q 0 0 8 0
 // Retrieval info: CONNECT: rdempty 0 0 0 0 @rdempty 0 0 0 0
+// Retrieval info: CONNECT: wrfull 0 0 0 0 @wrfull 0 0 0 0
 // Retrieval info: CONNECT: wrusedw 0 0 11 0 @wrusedw 0 0 11 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_rc_wc.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_rc_wc.inc FALSE

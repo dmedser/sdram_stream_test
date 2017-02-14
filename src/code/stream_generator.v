@@ -19,14 +19,15 @@ reg [31:0] counter;
 // stream = 10.6*10^6 bytes/s 
 
 reg [4:0] ticks;
-parameter MB10_COUNT_INCREMENT_PERIOD = 18 - 1;
+parameter M10p6_COUNT_INCREMENT_PERIOD = 18 - 1;
 
 //reg[17:0] ticks;
-//parameter KB1_COUNT_INCREMENT_PERIOD = 187500;
+parameter KB1_COUNT_INCREMENT_PERIOD = 187500;
 
-parameter MIN_COUNT_INCREMENT_PERIOD = 11 - 1; 
+parameter M38p4_COUNT_INCREMENT_PERIOD = 5 - 1; // 38.4 MB/s
+parameter MIN_COUNT_INCREMENT_PERIOD = 12 - 1; // 16 MB/s
 
-parameter TEST_COUNT_INCREMENT_PERIOD = 3 - 1; 
+parameter TEST_COUNT_INCREMENT_PERIOD = 11 - 1; 
 
 always@(posedge clk or negedge n_rst)
 begin
@@ -39,7 +40,7 @@ begin
 		begin
 			if(en == ON)
 				begin
-					if(ticks < TEST_COUNT_INCREMENT_PERIOD)
+					if(ticks < MIN_COUNT_INCREMENT_PERIOD)
 						ticks = ticks + 1;
 					else 
 						begin

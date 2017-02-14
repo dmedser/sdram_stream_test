@@ -39,6 +39,7 @@ module fifo_rc_wc (
 	wrreq,
 	q,
 	rdempty,
+	wrfull,
 	wrusedw);
 
 	input	[7:0]  data;
@@ -48,6 +49,7 @@ module fifo_rc_wc (
 	input	  wrreq;
 	output	[7:0]  q;
 	output	  rdempty;
+	output	  wrfull;
 	output	[10:0]  wrusedw;
 
 endmodule
@@ -85,7 +87,7 @@ endmodule
 // Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
-// Retrieval info: PRIVATE: wsFull NUMERIC "0"
+// Retrieval info: PRIVATE: wsFull NUMERIC "1"
 // Retrieval info: PRIVATE: wsUsedW NUMERIC "1"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
@@ -105,6 +107,7 @@ endmodule
 // Retrieval info: USED_PORT: rdempty 0 0 0 0 OUTPUT NODEFVAL "rdempty"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
+// Retrieval info: USED_PORT: wrfull 0 0 0 0 OUTPUT NODEFVAL "wrfull"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
 // Retrieval info: USED_PORT: wrusedw 0 0 11 0 OUTPUT NODEFVAL "wrusedw[10..0]"
 // Retrieval info: CONNECT: @data 0 0 8 0 data 0 0 8 0
@@ -114,6 +117,7 @@ endmodule
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 8 0 @q 0 0 8 0
 // Retrieval info: CONNECT: rdempty 0 0 0 0 @rdempty 0 0 0 0
+// Retrieval info: CONNECT: wrfull 0 0 0 0 @wrfull 0 0 0 0
 // Retrieval info: CONNECT: wrusedw 0 0 11 0 @wrusedw 0 0 11 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_rc_wc.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_rc_wc.inc FALSE
