@@ -6,9 +6,12 @@ module command_controller (
 	output reg c_nRAS, 
 	output reg c_nCAS, 
 	output reg c_nWE,  
-	output reg c_DQML, 
-	output reg c_DQMH  
+	output c_DQML, 
+	output c_DQMH  
 );
+
+assign c_DQML = 0;
+assign c_DQMH = 0;
 
 `include "C:/Users/dell/Documents/Quartus/usb_test/src/code/commands.vh"
 			 
@@ -34,8 +37,6 @@ task COMMAND_INHIBIT;
 		c_nRAS = 0; 
 		c_nCAS = 0;  
 		c_nWE  = 0; 
-		c_DQML = 0; 
-		c_DQMH = 0;
 	end
 endtask
 
@@ -45,8 +46,6 @@ task NOP;
 		c_nRAS = 1;
 		c_nCAS = 1;
 		c_nWE  = 1;
-		c_DQML = 0; 
-		c_DQMH = 0; 
 	end
 endtask
 
@@ -56,8 +55,6 @@ task ACTIVE;
 		c_nRAS = 0;
 		c_nCAS = 1;
 		c_nWE  = 1;
-		c_DQML = 0;  
-		c_DQMH = 0; 
 	end
 endtask
 
@@ -67,8 +64,6 @@ task READ;
 		c_nRAS = 1;
 		c_nCAS = 0;
 		c_nWE  = 1;
-		c_DQML = 0; // low level is active  
-		c_DQMH = 0; 
 	end
 endtask
 
@@ -78,8 +73,6 @@ task WRITE;
 		c_nRAS = 1;
 		c_nCAS = 0;
 		c_nWE  = 0;
-		c_DQML = 0;  
-		c_DQMH = 0; 
 	end
 endtask
 
@@ -89,8 +82,6 @@ task BURST_TERMINATE;
 		c_nRAS = 1;
 		c_nCAS = 1;
 		c_nWE  = 0;
-		c_DQML = 0; // X 
-		c_DQMH = 0; // X
 	end
 endtask
 
@@ -100,8 +91,6 @@ task PRECHARGE;
 		c_nRAS = 0;
 		c_nCAS = 1;
 		c_nWE  = 0;
-		c_DQML = 0; // X 
-		c_DQMH = 0; // X
 	end
 endtask
 
@@ -112,8 +101,6 @@ task AUTO_REFRESH;
 		c_nRAS = 0;
 		c_nCAS = 0;
 		c_nWE  = 1;
-		c_DQML = 0; // X 
-		c_DQMH = 0; // X
 	end
 endtask
 
@@ -123,8 +110,6 @@ task LOAD_MODE_REGISTER;
 		c_nRAS = 0;
 		c_nCAS = 0;
 		c_nWE  = 0;
-		c_DQML = 0; // X 
-		c_DQMH = 0; // X
 	end
 endtask
 

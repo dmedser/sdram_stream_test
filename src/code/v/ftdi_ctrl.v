@@ -117,6 +117,7 @@ endtask
 task write;
 	begin
 		if(fifo_tx_rdy == OFF) 
+		//if(rx_tx_rdy == OFF)
 			begin
 				fc_state = FC_STATE_CTRL;
 			end
@@ -153,6 +154,5 @@ begin
 			sync_wr = 1;
 		end
 end
-
 
 endmodule 

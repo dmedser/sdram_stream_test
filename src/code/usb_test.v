@@ -253,28 +253,28 @@ assign FH4_C2_nRE	= 1;
 assign FH4_C2_DE	= 0;
 
 
-assign SDRAM_CLK  = CLK_48_S; 
+assign SDRAM_CLK  = CLK_60_S; 
 assign FU_D[7:0] = (FOE == 1) ? FIFO_TO_FTDI_Q : 8'hzz;
 assign FODD  = 1;
 assign FSIWU = 1;
 assign FUSB_nRES = 1;
 
+wire CLK_60 = FCLK_OUT;
+
 pll PLL
 (
-	.inclk0(CLK_24), 
-	.c0(STP_CLK_60x4_240),
-	.c1(CLK_48),
-	.c2(STP_CLK_48x4_192),
-	.c3(CLK_48_S)
+	.inclk0(CLK_60), 
+	.c0(CLK_60_S),
+	.c1(STP_CLK_60x8_480),
 );
 
 reset_controller RST_CTRL (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.n_rst(N_RST)
 );
 
 ftdi_controller FTDI_CTRL (
-	.clk(FCLK_OUT),
+	.clk(CLK_60),
 	.n_rst(N_RST),
 	.oe(FOE),
 	.rxf(FRXF),
@@ -287,7 +287,7 @@ ftdi_controller FTDI_CTRL (
 );
 
 s_gen_controller S_GEN_CTRL (
-	.clk(FCLK_OUT),
+	.clk(CLK_60),
 	.n_rst(N_RST),
 	.wrreq(FTDI_Q_ASSERTED),
 	.sdram_rfo(SDRAM_RFO),
@@ -296,7 +296,7 @@ s_gen_controller S_GEN_CTRL (
 );
 
 stream_generator S_GEN (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.n_rst(N_RST),
 	.en(GEN_EN),
 	.s32(S32),
@@ -306,7 +306,7 @@ stream_generator S_GEN (
 wire [31:0] S32;
 
 s32s16_adapter S32S16_A (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.s32(S32),
 	.n32rdy(N32RDY),
 	.s16(FIFO_TO_SDRAM_DATA),
@@ -317,29 +317,32 @@ wire [15:0] FIFO_TO_SDRAM_DATA;
 
 fifo FIFO_TO_SDRAM 
 (
-	.clock(CLK_48),
+	.clock(CLK_60),
 	.data(FIFO_TO_SDRAM_DATA),
 	.rdreq(FIFO_TO_SDRAM_RD_REQ),
 	.wrreq(FIFO_TO_SDRAM_WR_REQ),
 	.q(SDRAM_DATA),
-	.usedw(FIFO_TO_SDRAM_USEDW)
+	.usedw(FIFO_TO_SDRAM_USEDW),
+	.full(FIFO_TO_SDRAM_FULL)
 );
 
 wire [9:0] FIFO_TO_SDRAM_USEDW;
 
 fifo_to_sdram_rd_controller FIFO_TO_SDRAM_RD_CTRL (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.fifo_usedw(FIFO_TO_SDRAM_USEDW),
+	.fifo_full(FIFO_TO_SDRAM_FULL),
 	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
-	.fifo_rdreq(FIFO_TO_SDRAM_RD_REQ)
+	.fifo_rdreq(FIFO_TO_SDRAM_RD_REQ),
+	.fifo_q_asserted(FIFO_TO_SDRAM_Q_ASSERTED)
 );
 
 wire [15:0] SDRAM_DATA;
 
 SDRAM_controller SDRAM_CTRL 
 (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.n_rst(N_RST),
 	
 	/***** TO SDRAM *****/
@@ -356,9 +359,10 @@ SDRAM_controller SDRAM_CTRL
 	
 	/******* USER ********/
 	.data(SDRAM_DATA),
-	.fifo_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
+	.fifo_to_sdram_tx_rdy(FIFO_TO_SDRAM_TX_RDY),
 	.sdram_rx_rdy(SDRAM_RX_RDY),
 	.sdram_q_asserted(SDRAM_Q_ASSERTED),
+	.fifo_from_sdram_rx_rdy(FIFO_FROM_SDRAM_RX_RDY),
 	.sdram_q(SDRAM_Q),
 	.sdram_rfo(SDRAM_RFO)
 );
@@ -367,24 +371,28 @@ wire [15:0] SDRAM_Q;
 
 fifo FIFO_FROM_SDRAM
 (
-	.clock(CLK_48),
+	.clock(CLK_60),
 	.data(SDRAM_Q),
 	.rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.wrreq(SDRAM_Q_ASSERTED),
 	.q(FIFO_FROM_SDRAM_Q_16),
-	.usedw(FIFO_FROM_SDRAM_USEDW)
+	.usedw(FIFO_FROM_SDRAM_USEDW),
+	.full(FIFO_FROM_SDRAM_FULL)
 );
 
 wire [9:0] FIFO_FROM_SDRAM_USEDW;
 wire [15:0] FIFO_FROM_SDRAM_Q_16;
 
-fifo_from_sdram_rd_controller FIFO_FROM_SDRAM_RD_CTRL
+fifo_from_sdram_controller FIFO_FROM_SDRAM_CTRL
 (
-	.clk(CLK_48),
+	.clk(CLK_60),
 	.fifo_usedw(FIFO_FROM_SDRAM_USEDW),
+	.fifo_full(FIFO_FROM_SDRAM_FULL),
 	.fifo_rdreq(FIFO_FROM_SDRAM_RDREQ),
 	.byte_switcher(BYTE_SWITCHER),
-	.fifo_q_asserted(FIFO_FROM_SDRAM_Q_ASSERTED)
+	.fifo_q_asserted(FIFO_FROM_SDRAM_Q_ASSERTED),
+	.this_rx_rdy(FIFO_FROM_SDRAM_RX_RDY),
+	.next_rx_rdy(FIFO_TO_FTDI_RX_RDY)
 );
 
 s16s8_adapter S16S8_A(
@@ -395,145 +403,49 @@ s16s8_adapter S16S8_A(
 
 wire [7:0] FIFO_FROM_SDRAM_Q_8;
 
-fifo_rc_wc FIFO_TO_FTDI (
-	.rdclk(FCLK_OUT),
-	.wrclk(CLK_48),
+fifo8 FIFO_TO_FTDI (
+	.clock(CLK_60),
+	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
+	.rdreq(FIFO_TO_FTDI_RDREQ),
 	.data(FIFO_FROM_SDRAM_Q_8),
 	.q(FIFO_TO_FTDI_Q),
-	.rdempty(FIFO_TO_FTDI_EMPTY),
-	.wrusedw(FIFO_TO_FTDI_USEDW),
-	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
-	.rdreq(FIFO_TO_FTDI_RDREQ)
+	.usedw(FIFO_TO_FTDI_USEDW),
+	.full(),
+	.empty()
 );
 
-wire [7:0] FIFO_TO_FTDI_Q;
 wire [10:0] FIFO_TO_FTDI_USEDW;
+wire [7:0] FIFO_TO_FTDI_Q;
 
-fifo_to_ftdi_rd_controller FIFO_TO_FTDI_RD_CTRL(
-	.ftdi_clk(FCLK_OUT),
+fifo_to_ftdi_controller FIFO_TO_FTDI_CTRL(
+	.clk(CLK_60),
 	.fifo_usedw(FIFO_TO_FTDI_USEDW),
-	.fifo_empty(FIFO_TO_FTDI_EMPTY),
+	.fifo_rdreq(FIFO_TO_FTDI_RDREQ),
 	.fifo_tx_rdy(FIFO_TO_FTDI_TX_RDY),
-	.ftdi_rx_rdy(FTDI_RX_RDY),
-	.fifo_rdreq(FIFO_TO_FTDI_RDREQ)
+	.fifo_rx_rdy(FIFO_TO_FTDI_RX_RDY),
+	.ftdi_rx_rdy(FTDI_RX_RDY)
 );
 
 
-//fifo_ftdi_adapter ff_adapter (
-//	.rdclk(FCLK_OUT),
-//	.usedw(FIFO_TO_FTDI_USEDW),
-//	.wrreq(FIFO_FROM_SDRAM_Q_ASSERTED),
-//	.rdreq(FIFO_TO_FTDI_RDREQ),
-//	.fifo_tx_rdy(FIFO_TO_FTDI_TX_RDY),
-//	.ftdi_rx_rdy(FTDI_RX_RDY),
-//	.FWR(FWR),
-//	.FTXE(FTXE)
+//err_check_t1 ERR_CHECK_FROM_SDRAM (
+//	.clk(CLK_60),
+//	.data(SDRAM_DQ),
+//	.wren(SDRAM_Q_ASSERTED),
+//	.err()
 //);
 //
-//wire FIFO_TO_FTDI_TX_RDY;
-//wire FTDI_RX_RDY = ((system_state == SYS_STATE_COUNT_STOP_WAIT) || (system_state == SYS_STATE_WRITE_TO_FTDI)) && (FIFO_TO_FTDI_TX_RDY == ON) && (FTXE == 0);	
+//err_check_t2 ERR_CHECK_FIFO_FROM_SDRAM (
+//	.clk(CLK_60),
+//	.data(FIFO_FROM_SDRAM_Q_16),
+//	.wren(FIFO_FROM_SDRAM_Q_ASSERTED),
+//	.err()
+//);
 //
-//assign FODD  = 1;
-//assign FSIWU = 1;
-//assign FUSB_nRES = 1;
-//
-//reg count_status;
-//parameter COUNT_STOP = 0,
-//			 COUNT_START = 1;
-//	 
-//reg [2:0] system_state;
-//parameter SYS_STATE_COUNT_START_WAIT 		  = 0, 
-//			 SYS_STATE_READ_FROM_FTDI_PREPARE  = 1, 
-//			 SYS_STATE_LATCH_DATA_FROM_FTDI 	  = 2,
-//			 SYS_STATE_DATA_FROM_FTDI_ANALYSIS = 3,
-//			 SYS_STATE_COUNT_STOP_WAIT 		  = 4,
-//			 SYS_STATE_WRITE_TO_FTDI			  = 5;
-//		 
-//
-///************** SYSTEM STATE MACHINE **************/
-//always@(posedge FCLK_OUT or negedge N_RST)
-//begin
-//	if(N_RST == 0)
-//		begin
-//		//	FWR   = 1;	
-//			FRD   = 1;
-//			FOE   = 1;
-//			INPUT_REG = 0;
-//			system_state = SYS_STATE_COUNT_START_WAIT;
-//			count_status = COUNT_STOP;
-//		end
-//	else 
-//		begin
-//			case(system_state)
-//				SYS_STATE_COUNT_START_WAIT:
-//					begin
-//						if(FRXF == 0)
-//							begin
-//								FOE <= 0;
-//								system_state = SYS_STATE_READ_FROM_FTDI_PREPARE;
-//							end
-//						else
-//							begin
-//								FOE = 1;
-//								FRD = 1;
-//								system_state = SYS_STATE_COUNT_START_WAIT;
-//							end
-//					end
-//				SYS_STATE_READ_FROM_FTDI_PREPARE: 
-//					begin
-//						FRD = 0;
-//						system_state = SYS_STATE_LATCH_DATA_FROM_FTDI;
-//					end
-//				SYS_STATE_LATCH_DATA_FROM_FTDI:
-//					begin
-//						INPUT_REG <= FU_D;
-//						FRD = 1;
-//						FOE = 1;
-//						system_state = SYS_STATE_DATA_FROM_FTDI_ANALYSIS;
-//					end
-//				SYS_STATE_DATA_FROM_FTDI_ANALYSIS:
-//					begin
-//						// СТАТУС СЧИТАН, далее либо запись в FTDI, либо SYS_STATE_COUNT_START_WAIT
-//						if(INPUT_REG != 0)
-//							begin
-//								count_status = COUNT_START;
-//								system_state = SYS_STATE_COUNT_STOP_WAIT;
-//							end
-//						else 
-//							begin
-//								count_status = COUNT_STOP;
-//								system_state = SYS_STATE_COUNT_START_WAIT;
-//							end
-//					end
-//				SYS_STATE_COUNT_STOP_WAIT:
-//					begin
-//						if(FRXF == 0)
-//							begin
-//								FOE <= 0;
-//								system_state = SYS_STATE_READ_FROM_FTDI_PREPARE;
-//							end
-//						else if(FIFO_TO_FTDI_TX_RDY == ON)
-//							begin
-//								system_state = SYS_STATE_WRITE_TO_FTDI;
-//							end
-//					end
-//				SYS_STATE_WRITE_TO_FTDI:
-//					begin
-//						if(FIFO_TO_FTDI_TX_RDY == OFF) 
-//							begin
-//								system_state = SYS_STATE_COUNT_STOP_WAIT;
-//							end
-//						else
-//							begin
-//								system_state = SYS_STATE_WRITE_TO_FTDI;
-//							end
-//					end
-//				default : 				
-//					system_state <= SYS_STATE_COUNT_START_WAIT;
-//			endcase
-//		end
-//end
-
-
+//err_check_t1 ERR_CHECK_TO_SDRAM (
+//	.clk(CLK_60),
+//	.data(SDRAM_DQ),
+//	.wren(FIFO_TO_SDRAM_Q_ASSERTED),
+//	.err()
+//);
 
 endmodule

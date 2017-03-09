@@ -1,0 +1,6 @@
+`define SDRAM_STATE_INIT 			  0
+`define SDRAM_STATE_FORCE_REFRESH  1
+`define SDRAM_STATE_CONTROL 		  2
+`define SDRAM_STATE_WRITE			  3
+`define SDRAM_STATE_READ	   	  4
+`define SDRAM_STATE_REFRESH 		  5
